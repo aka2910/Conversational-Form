@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Eleven Forms - Conversation History</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --bg-gray: #f9fafb;
+      --text-gray: #4b5563;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-gray);
+      color: #1f2937;
+    }
+
+    .header {
+      background: white;
+      padding: 1.5rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      margin: 0;
+      padding: 0 2rem;
+      color: var(--primary-dark);
+      font-size: 1.8rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin: 0.5rem 0 1rem;
+      font-size: 1rem;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    .result {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      border-radius: 6px;
+      background: var(--bg-gray);
+      border: 1px solid #e5e7eb;
+    }
+
+    .result pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-gray);
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    .conversations-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .conversations-table th,
+    .conversations-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .conversations-table th {
+      background: #f3f4f6;
+      font-weight: 500;
+      color: var(--text-gray);
+    }
+
+    .conversations-table tr:hover {
+      background: #f9fafb;
+    }
+
+    .detail-row {
+      display: none;
+      background: #f8fafc;
+    }
+
+    .detail-row.visible {
+      display: table-row;
+    }
+
+    .detail-content {
+      padding: 1.5rem;
+    }
+
+    .transcript-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .transcript-table th,
+    .transcript-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .expand-button {
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .expand-button:hover {
+      background: none;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Eleven Forms</h1>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Conversation History</h2>
+      <form id="historyForm">
+        <label for="agentId">Agent ID</label>
+        <input type="text" id="agentId" name="agentId" 
+               placeholder="Enter your agent ID" required>
+        <button type="submit">View History</button>
+      </form>
+      <div id="historyResult" class="result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('historyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const agentId = document.getElementById('agentId').value;
+      const historyResultDiv = document.getElementById('historyResult');
+      historyResultDiv.style.display = 'block';
+      historyResultDiv.innerHTML = '<p style="color: var(--text-gray);">Fetching conversation history...</p>';
+
+      try {
+        const response = await fetch(`/api/history/${agentId}`);
+        const data = await response.json();
+        if (response.ok) {
+          const table = createConversationsTable(data.conversations);
+          historyResultDiv.innerHTML = '';
+          historyResultDiv.appendChild(table);
+        } else {
+          historyResultDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+        }
+      } catch (error) {
+        historyResultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+      }
+    });
+
+    function createConversationsTable(conversations) {
+      const table = document.createElement('table');
+      table.className = 'conversations-table';
+      
+      // Table header
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr>
+          <th>Date</th>
+          <th>Duration</th>
+          <th>Messages</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      // Table body
+      const tbody = document.createElement('tbody');
+      conversations.forEach(conv => {
+        const date = new Date(conv.start_time_unix_secs * 1000).toLocaleString();
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${date}</td>
+          <td>${conv.call_duration_secs}s</td>
+          <td>${conv.message_count}</td>
+          <td><span class="status-badge ${conv.call_successful === 'success' ? 'status-success' : 'status-error'}">${conv.status}</span></td>
+          <td><button class="expand-button" onclick="toggleDetail(this, '${conv.conversation_id}')">View Details</button></td>
+        `;
+        tbody.appendChild(row);
+
+        // Detail row
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'detail-row';
+        detailRow.id = `detail-${conv.conversation_id}`;
+        detailRow.innerHTML = `
+          <td colspan="5">
+            <div class="detail-content">
+              <h3>Conversation Transcript</h3>
+              <table class="transcript-table">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Message</th>
+                    <th>Time in Call</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${conv.details.transcript.map(t => `
+                    <tr>
+                      <td>${t.role}</td>
+                      <td>${t.message}</td>
+                      <td>${t.time_in_call_secs}s</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(detailRow);
+      });
+      table.appendChild(tbody);
+
+      return table;
+    }
+
+    function toggleDetail(button, convId) {
+      const detailRow = document.getElementById(`detail-${convId}`);
+      detailRow.classList.toggle('visible');
+      button.textContent = detailRow.classList.contains('visible') ? 'Hide Details' : 'View Details';
+    }
+  </script>
+</body>
+</html>
