@@ -246,6 +246,26 @@
     .delete-button:hover {
       background: #dc2626;
     }
+
+    .input-group {
+      margin-bottom: 1rem;
+    }
+
+    .input-group label {
+      margin-right: 1rem;
+    }
+
+    .input-wrapper {
+      margin-bottom: 1rem;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin: 0.5rem 0;
+    }
   </style>
 </head>
 <body>
@@ -255,11 +275,28 @@
 
   <div class="container">
     <div class="card">
-      <h2>Convert Google Form to Smart Voice Form</h2>
+      <h2>Convert Form to Smart Voice Form</h2>
       <form id="createForm">
-        <label for="googleFormUrl">Google Form URL</label>
-        <input type="text" id="googleFormUrl" name="googleFormUrl" 
-               placeholder="https://docs.google.com/forms/d/..." required>
+        <div class="input-group">
+          <label>
+            <input type="radio" name="inputType" value="url" checked> Google Form URL
+          </label>
+          <label>
+            <input type="radio" name="inputType" value="image"> Upload Image
+          </label>
+        </div>
+
+        <div id="urlInput" class="input-wrapper">
+          <label for="googleFormUrl">Google Form URL</label>
+          <input type="text" id="googleFormUrl" name="googleFormUrl" 
+                 placeholder="https://docs.google.com/forms/d/...">
+        </div>
+
+        <div id="imageInput" class="input-wrapper" style="display: none;">
+          <label for="formImage">Form Image</label>
+          <input type="file" id="formImage" name="formImage" accept="image/*">
+        </div>
+
         <button type="submit">Convert Form</button>
       </form>
       <div id="result" class="result" style="display: none;"></div>
@@ -350,19 +387,44 @@
       setInterval(loadAgents, 5000);
     });
 
+    document.querySelectorAll('input[name="inputType"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        document.getElementById('urlInput').style.display = e.target.value === 'url' ? 'block' : 'none';
+        document.getElementById('imageInput').style.display = e.target.value === 'image' ? 'block' : 'none';
+      });
+    });
+
     document.getElementById('createForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const googleFormUrl = document.getElementById('googleFormUrl').value;
+      const inputType = document.querySelector('input[name="inputType"]:checked').value;
       const resultDiv = document.getElementById('result');
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = '<div class="loading-text"><div class="spinner"></div>Creating conversational form...</div>';
 
       try {
-        const response = await fetch('/api/createForm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ googleFormUrl })
-        });
+        let response;
+        if (inputType === 'url') {
+          const googleFormUrl = document.getElementById('googleFormUrl').value;
+          if (!googleFormUrl) throw new Error('Please enter a Google Form URL');
+          
+          response = await fetch('/api/createForm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ googleFormUrl })
+          });
+        } else {
+          const formImage = document.getElementById('formImage').files[0];
+          if (!formImage) throw new Error('Please select an image');
+
+          const formData = new FormData();
+          formData.append('image', formImage, formImage.name);
+          
+          response = await fetch('/api/createFormFromImage', {
+            method: 'POST',
+            body: formData
+          });
+        }
+
         const data = await response.json();
         if (response.ok) {
           resultDiv.innerHTML = `

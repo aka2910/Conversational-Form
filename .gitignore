@@ -12,4 +12,4 @@ wheels/
 # Node
 node_modules/
 .env
-
+uploads/
