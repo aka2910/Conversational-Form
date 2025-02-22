@@ -103,7 +103,13 @@ async function createElevenLabsAgent(formDataJson, googleFormUrl, req) {
   form_items.forEach(item => {
     data_collection_config[item.title] = {
       type: "string",
-      description:  `Give the exact response from the user for "${item.title}". If there were options in the form, mention the exact response from the options available in the form fields other wise only the response from the user. Don't use any filler words. For email, give the exact email address, for dates use DD/MM/YYYY format. For phone numbers, give the exact phone number.`,
+      description:  `Give the exact response from the user for "${item.title}". 
+- If there were options in the form, mention the exact response from the options available in the form fields other wise only the response from the user. 
+- Don't use any filler words. 
+- For email, give the exact email address i.e. example@example.com if you see in the form example at the rate example.com.
+- For dates use DD/MM/YYYY format. 
+- For phone numbers, give the exact phone number. 
+- In case of number fields, give the exact value in number format.`,
     }
   })
 
@@ -119,7 +125,7 @@ async function createElevenLabsAgent(formDataJson, googleFormUrl, req) {
       conversation_config: {
         agent: {
           prompt: {
-            prompt: `You are a survey agent. You have to ask the questions to the user for the below fields. Don't overwhelm the user and ask each question correctly according to their type. Also, stick to only survey questions, don't let the conversation go in any other direction. When all the details are filled, end the call. Speak a little about what the form is about from the description in the start.
+            prompt: `You are a survey agent. You have to ask the questions to the user for the below fields. Don't overwhelm the user and ask each question correctly according to their type. Also, stick to only survey questions, don't let the conversation go in any other direction. In case of options or choices, always state each and every option. Speak a little about what the form is about from the description in the start. When all the details are filled, end the call with the end_call action.
 \n${JSON.stringify(formDataJson, null, 2)}`,
             llm: "gemini-1.5-flash",
             temperature: 0.5,
