@@ -103,7 +103,7 @@ async function createElevenLabsAgent(formDataJson, googleFormUrl, req) {
   form_items.forEach(item => {
     data_collection_config[item.title] = {
       type: "string",
-      description:  `Give the exact response from the user for "${item.title}". If there were options in the form, mention the exact response from the options available in the form fields other wise only the response from the user. Don't use any filler words.`,
+      description:  `Give the exact response from the user for "${item.title}". If there were options in the form, mention the exact response from the options available in the form fields other wise only the response from the user. Don't use any filler words. For email, give the exact email address, for dates use DD/MM/YYYY format. For phone numbers, give the exact phone number.`,
     }
   })
 
