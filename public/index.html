@@ -474,7 +474,7 @@
             {
               headers: {
                 "xi-api-key": await (
-                  await fetch("http://localhost:3000/api/key")
+                  await fetch("/api/key")
                 ).text(),
               },
             }
@@ -768,7 +768,7 @@
 
         try {
           const apiKey = await (
-            await fetch("http://localhost:3000/api/key")
+            await fetch("/api/key")
           ).text();
           const response = await fetch(
             `https://api.elevenlabs.io/v1/convai/agents/${agentId}`,
